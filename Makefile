@@ -1,4 +1,4 @@
-IMAGE_NAME = mcp-abstract-api
+IMAGE_NAME = mcp-abstract
 VERSION ?= 1.0.0
 
 .PHONY: help install dev-install format lint test clean run check all docker-build docker-buildx docker-run
@@ -32,6 +32,9 @@ test: ## Run tests with pytest
 
 test-cov: ## Run tests with coverage
 	uv run pytest tests/ -v --cov=src/mcp_abstract_api --cov-report=term-missing
+
+test-e2e: ## Run end-to-end Docker tests
+	uv run pytest e2e/ -v -s
 
 clean: ## Clean up artifacts
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

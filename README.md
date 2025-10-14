@@ -248,11 +248,14 @@ make all           # Full workflow (clean + install + format + check)
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run unit tests
 make test
 
 # Run with coverage report
 make test-cov
+
+# Run E2E Docker tests (requires Docker, not run in CI)
+make test-e2e
 
 # Run specific test file
 uv run pytest tests/test_server.py -v

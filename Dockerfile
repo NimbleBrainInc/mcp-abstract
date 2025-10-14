@@ -2,10 +2,11 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install uv
-RUN apt-get update && apt-get install -y curl && \
-    rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir uv
+# Install uv and curl for healthcheck
+RUN apt-get update && \
+    apt-get install -y curl && \
+    pip install --no-cache-dir uv && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy project files
 COPY pyproject.toml ./
