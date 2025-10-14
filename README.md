@@ -137,7 +137,7 @@ make test-http
 make docker-build
 
 # Build and push multi-platform image (amd64 + arm64)
-make docker-buildx VERSION=1.0.0
+make release VERSION=1.0.0
 
 # Run container
 make docker-run
@@ -287,7 +287,7 @@ make check
 make docker-build
 
 # Build and push multi-platform image
-make docker-buildx VERSION=1.0.0
+make release VERSION=1.0.0
 
 # Run container
 make docker-run
@@ -303,7 +303,7 @@ docker buildx create --name multiplatform --use
 docker buildx inspect --bootstrap
 ```
 
-The `docker-buildx` command builds for both `linux/amd64` and `linux/arm64` architectures and pushes directly to your container registry.
+The `release` command builds for both `linux/amd64` and `linux/arm64` architectures and pushes directly to your container registry.
 
 ## Project Structure
 

@@ -1,7 +1,7 @@
-IMAGE_NAME = mcp-abstract
+IMAGE_NAME = nimbletools/mcp-abstract
 VERSION ?= 1.0.0
 
-.PHONY: help install dev-install format lint test clean run check all docker-build docker-buildx docker-run
+.PHONY: help install dev-install format lint test clean run check all docker-build release docker-run
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -67,14 +67,14 @@ all: clean install format lint typecheck test ## Full workflow
 docker-build: ## Build Docker image locally
 	docker build -t $(IMAGE_NAME):$(VERSION) -t $(IMAGE_NAME):latest .
 
-docker-buildx: ## Build and push multi-platform Docker image
+docker-run: ## Run Docker container
+	docker run -e ABSTRACT_API_KEY=$(ABSTRACT_API_KEY) -p 8000:8000 $(IMAGE_NAME):$(VERSION)
+
+release: ## Build and push multi-platform Docker image
 	docker buildx build --platform linux/amd64,linux/arm64 \
 		-t $(IMAGE_NAME):$(VERSION) \
 		-t $(IMAGE_NAME):latest \
 		--push .
-
-docker-run: ## Run Docker container
-	docker run -e ABSTRACT_API_KEY=$(ABSTRACT_API_KEY) -p 8000:8000 $(IMAGE_NAME):$(VERSION)
 
 # Aliases
 fmt: format
