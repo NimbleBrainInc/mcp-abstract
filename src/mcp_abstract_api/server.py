@@ -212,7 +212,9 @@ async def get_ip_info(ip_address: str, ctx: Context[Any, Any, Any]) -> IPGeoloca
 
 
 @mcp.tool()
-async def geolocate_ip_security(ip_address: str, ctx: Context[Any, Any, Any]) -> IPGeolocationResponse:
+async def geolocate_ip_security(
+    ip_address: str, ctx: Context[Any, Any, Any]
+) -> IPGeolocationResponse:
     """Get IP geolocation with security/threat analysis.
 
     Analyzes IP address to determine if it's from a VPN, proxy server,

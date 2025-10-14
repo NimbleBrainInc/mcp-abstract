@@ -1,12 +1,18 @@
-# MCP Server - Abstract API
+# MCP Server - Abstract
+
+[![NimbleTools Registry](https://img.shields.io/badge/NimbleTools-Registry-green)](https://github.com/nimbletoolsinc/mcp-registry)
+[![NimbleBrain Platform](https://img.shields.io/badge/NimbleBrain-Platform-blue)](https://www.nimblebrain.ai)
+[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://www.nimblebrain.ai/discord?utm_source=github&utm_medium=readme&utm_campaign=mcp-abstract&utm_content=discord-badge)
+
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/NimbleBrainInc/mcp-abstract-api/actions/workflows/ci.yaml/badge.svg)](https://github.com/NimbleBrainInc/mcp-abstract-api/actions)
-[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://www.nimblebrain.ai/discord?utm_source=github&utm_medium=readme&utm_campaign=mcp-abstract-api&utm_content=discord-badge)
+[![CI](https://github.com/NimbleBrainInc/mcp-abstract/actions/workflows/ci.yaml/badge.svg)](https://github.com/NimbleBrainInc/mcp-abstract/actions)
 
 
-MCP Server for [Abstract API](https://www.abstractapi.com/) with comprehensive tooling, type safety, and production-ready architecture.
+## About
+
+**MCP Server - Abstract** is a production-ready Model Context Protocol (MCP) server that provides seamless integration with [Abstract's](https://www.abstractapi.com/)'s comprehensive suite of data validation, enrichment, and intelligence services. Built with enterprise-grade architecture, this server enables AI assistants and agents to validate emails and phone numbers, enrich company data, perform IP geolocation, convert currencies, and much more—all through a type-safe, async-first interface.
 
 ## Features
 
@@ -387,20 +393,20 @@ Errors are logged via the MCP context for debugging.
 4. Run `make check` to ensure quality
 5. Submit a pull request
 
-## Links
 
-- [Abstract API Documentation](https://www.abstractapi.com/api)
-- [FastMCP Documentation](https://github.com/jlowin/fastmcp)
-- [MCP Documentation](https://modelcontextprotocol.io)
 
 ## Support
 
 For issues, questions, or contributions, please open an issue on GitHub.
 
-About
-Part of the NimbleTools ecosystem. From the makers of NimbleBrain.
-
-
 ## License
 
 MIT License - see LICENSE file for details
+
+## Links
+
+Part of the [NimbleTools Registry](https://github.com/nimbletoolsinc/mcp-registry) - an open source collection of production-ready MCP servers. For enterprise deployment, check out [NimbleBrain](https://www.nimblebrain.ai).
+
+- [Abstract API Documentation](https://www.abstractapi.com/api)
+- [FastMCP Documentation](https://github.com/jlowin/fastmcp)
+- [MCP Documentation](https://modelcontextprotocol.io)
