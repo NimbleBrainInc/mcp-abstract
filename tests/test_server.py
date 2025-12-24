@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from mcp.server.fastmcp import Context
+from fastmcp import Client
 
 from mcp_abstract_api.api_models import (
     CompanyInfoResponse,
@@ -11,28 +11,20 @@ from mcp_abstract_api.api_models import (
     IPGeolocationResponse,
     PhoneValidationResponse,
 )
-from mcp_abstract_api.server import (
-    geolocate_ip,
-    get_company_info,
-    validate_email,
-    validate_phone,
-)
+from mcp_abstract_api.server import mcp
 
 
 @pytest.fixture
-def mock_context() -> MagicMock:
-    """Create a mock MCP context."""
-    ctx = MagicMock(spec=Context)
-    ctx.warning = AsyncMock()
-    ctx.error = AsyncMock()
-    return ctx
+def mcp_server():
+    """Return the MCP server instance."""
+    return mcp
 
 
 class TestMCPTools:
     """Test the MCP server tools."""
 
     @pytest.mark.asyncio
-    async def test_validate_email(self, mock_context: MagicMock) -> None:
+    async def test_validate_email(self, mcp_server) -> None:
         """Test validate_email tool."""
         with patch("mcp_abstract_api.server.get_client", new_callable=AsyncMock) as mock_get_client:
             mock_client = AsyncMock()
@@ -50,14 +42,15 @@ class TestMCPTools:
                 is_smtp_valid={"value": True},
             )
 
-            result = await validate_email("test@example.com", mock_context)
+            async with Client(mcp_server) as client:
+                result = await client.call_tool("validate_email", {"email": "test@example.com"})
 
-            assert result.email == "test@example.com"
-            assert result.quality_score == 0.95
+            assert result.data.email == "test@example.com"
+            assert result.data.quality_score == 0.95
             mock_client.validate_email.assert_called_once_with("test@example.com")
 
     @pytest.mark.asyncio
-    async def test_validate_phone(self, mock_context: MagicMock) -> None:
+    async def test_validate_phone(self, mcp_server) -> None:
         """Test validate_phone tool."""
         with patch("mcp_abstract_api.server.get_client", new_callable=AsyncMock) as mock_get_client:
             mock_client = AsyncMock()
@@ -70,14 +63,17 @@ class TestMCPTools:
                 type="mobile",
             )
 
-            result = await validate_phone("+1234567890", mock_context, "US")
+            async with Client(mcp_server) as client:
+                result = await client.call_tool(
+                    "validate_phone", {"phone": "+1234567890", "country_code": "US"}
+                )
 
-            assert result.phone == "+1234567890"
-            assert result.valid is True
+            assert result.data.phone == "+1234567890"
+            assert result.data.valid is True
             mock_client.validate_phone.assert_called_once_with("+1234567890", "US")
 
     @pytest.mark.asyncio
-    async def test_geolocate_ip(self, mock_context: MagicMock) -> None:
+    async def test_geolocate_ip(self, mcp_server) -> None:
         """Test geolocate_ip tool."""
         with patch("mcp_abstract_api.server.get_client", new_callable=AsyncMock) as mock_get_client:
             mock_client = AsyncMock()
@@ -91,14 +87,15 @@ class TestMCPTools:
                 longitude=-122.0838,
             )
 
-            result = await geolocate_ip("8.8.8.8", mock_context)
+            async with Client(mcp_server) as client:
+                result = await client.call_tool("geolocate_ip", {"ip_address": "8.8.8.8"})
 
-            assert result.ip_address == "8.8.8.8"
-            assert result.city == "Mountain View"
+            assert result.data.ip_address == "8.8.8.8"
+            assert result.data.city == "Mountain View"
             mock_client.geolocate_ip.assert_called_once_with("8.8.8.8", None)
 
     @pytest.mark.asyncio
-    async def test_get_company_info(self, mock_context: MagicMock) -> None:
+    async def test_get_company_info(self, mcp_server) -> None:
         """Test get_company_info tool."""
         with patch("mcp_abstract_api.server.get_client", new_callable=AsyncMock) as mock_get_client:
             mock_client = AsyncMock()
@@ -111,11 +108,42 @@ class TestMCPTools:
                 employees_count=100,
             )
 
-            result = await get_company_info("example.com", mock_context)
+            async with Client(mcp_server) as client:
+                result = await client.call_tool("get_company_info", {"domain": "example.com"})
 
-            assert result.name == "Example Corp"
-            assert result.domain == "example.com"
+            assert result.data.name == "Example Corp"
+            assert result.data.domain == "example.com"
             mock_client.get_company_info.assert_called_once_with("example.com")
+
+
+class TestToolsList:
+    """Test tool registration."""
+
+    @pytest.mark.asyncio
+    async def test_tools_are_registered(self, mcp_server) -> None:
+        """Test that all tools are properly registered."""
+        async with Client(mcp_server) as client:
+            tools = await client.list_tools()
+
+        tool_names = [tool.name for tool in tools]
+        expected_tools = [
+            "validate_email",
+            "validate_phone",
+            "validate_vat",
+            "geolocate_ip",
+            "get_ip_info",
+            "geolocate_ip_security",
+            "get_timezone",
+            "convert_timezone",
+            "get_holidays",
+            "get_exchange_rates",
+            "convert_currency",
+            "get_company_info",
+            "scrape_url",
+            "generate_screenshot",
+        ]
+        for expected_tool in expected_tools:
+            assert expected_tool in tool_names, f"Tool {expected_tool} not found"
 
 
 class TestHealthEndpoint:

@@ -1,7 +1,7 @@
 IMAGE_NAME = mcp-abstract-api
 VERSION ?= 1.0.0
 
-.PHONY: help install dev-install format lint test clean run check all docker-build docker-buildx docker-run
+.PHONY: help install dev-install format format-check lint lint-fix typecheck test test-cov clean run run-stdio run-http test-http check all docker-build docker-buildx docker-run
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -17,6 +17,9 @@ dev-install: ## Install with dev dependencies
 
 format: ## Format code with ruff
 	uv run ruff format src/ tests/
+
+format-check: ## Check code formatting with ruff
+	uv run ruff format --check src/ tests/
 
 lint: ## Lint code with ruff
 	uv run ruff check src/ tests/
@@ -56,7 +59,7 @@ test-http: ## Test HTTP server is running
 	@echo "Testing health endpoint..."
 	@curl -s http://localhost:8000/health | grep -q "healthy" && echo "✓ Server is healthy" || echo "✗ Server not responding"
 
-check: lint typecheck test ## Run all checks
+check: format-check lint typecheck test ## Run all checks
 
 all: clean install format lint typecheck test ## Full workflow
 
