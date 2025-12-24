@@ -1,0 +1,19 @@
+{
+  "manifest_version": "0.3",
+  "name": "ai.nimbletools/abstract",
+  "version": "1.0.0",
+  "description": "Abstract API server with email validation, phone validation, IP geolocation, and more",
+  "author": {
+    "name": "NimbleBrain Inc"
+  },
+  "server": {
+    "type": "python",
+    "entry_point": "mcp_abstract_api/server.py",
+    "mcp_config": {
+      "command": "python",
+      "args": [
+        "${__dirname}/mcp_abstract_api/server.py"
+      ]
+    }
+  }
+}
