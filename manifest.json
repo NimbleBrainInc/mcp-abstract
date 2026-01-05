@@ -1,18 +1,81 @@
 {
   "manifest_version": "0.3",
   "name": "@nimblebraininc/abstract",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Abstract API server with email validation, phone validation, IP geolocation, and more",
   "author": {
     "name": "NimbleBrain Inc"
   },
   "user_config": {
-    "api_key": {
+    "email_api_key": {
       "type": "string",
-      "title": "Abstract API Key",
-      "description": "Your Abstract API key from https://www.abstractapi.com/",
+      "title": "Email Validation API Key",
+      "description": "API key for email validation service",
       "sensitive": true,
-      "required": true
+      "required": false
+    },
+    "phone_api_key": {
+      "type": "string",
+      "title": "Phone Validation API Key",
+      "description": "API key for phone validation service",
+      "sensitive": true,
+      "required": false
+    },
+    "vat_api_key": {
+      "type": "string",
+      "title": "VAT Validation API Key",
+      "description": "API key for EU VAT validation service",
+      "sensitive": true,
+      "required": false
+    },
+    "ip_api_key": {
+      "type": "string",
+      "title": "IP Geolocation API Key",
+      "description": "API key for IP geolocation service",
+      "sensitive": true,
+      "required": false
+    },
+    "timezone_api_key": {
+      "type": "string",
+      "title": "Timezone API Key",
+      "description": "API key for timezone service",
+      "sensitive": true,
+      "required": false
+    },
+    "holidays_api_key": {
+      "type": "string",
+      "title": "Holidays API Key",
+      "description": "API key for public holidays service",
+      "sensitive": true,
+      "required": false
+    },
+    "exchange_api_key": {
+      "type": "string",
+      "title": "Exchange Rates API Key",
+      "description": "API key for currency exchange rates service",
+      "sensitive": true,
+      "required": false
+    },
+    "company_api_key": {
+      "type": "string",
+      "title": "Company Enrichment API Key",
+      "description": "API key for company enrichment service",
+      "sensitive": true,
+      "required": false
+    },
+    "scrape_api_key": {
+      "type": "string",
+      "title": "Web Scraping API Key",
+      "description": "API key for web scraping service",
+      "sensitive": true,
+      "required": false
+    },
+    "screenshot_api_key": {
+      "type": "string",
+      "title": "Screenshot API Key",
+      "description": "API key for website screenshot service",
+      "sensitive": true,
+      "required": false
     }
   },
   "server": {
@@ -22,7 +85,16 @@
       "command": "python",
       "args": ["-m", "mcp_abstract_api.server"],
       "env": {
-        "ABSTRACT_API_KEY": "${user_config.api_key}"
+        "ABSTRACT_EMAIL_API_KEY": "${user_config.email_api_key}",
+        "ABSTRACT_PHONE_API_KEY": "${user_config.phone_api_key}",
+        "ABSTRACT_VAT_API_KEY": "${user_config.vat_api_key}",
+        "ABSTRACT_IP_API_KEY": "${user_config.ip_api_key}",
+        "ABSTRACT_TIMEZONE_API_KEY": "${user_config.timezone_api_key}",
+        "ABSTRACT_HOLIDAYS_API_KEY": "${user_config.holidays_api_key}",
+        "ABSTRACT_EXCHANGE_API_KEY": "${user_config.exchange_api_key}",
+        "ABSTRACT_COMPANY_API_KEY": "${user_config.company_api_key}",
+        "ABSTRACT_SCRAPE_API_KEY": "${user_config.scrape_api_key}",
+        "ABSTRACT_SCREENSHOT_API_KEY": "${user_config.screenshot_api_key}"
       }
     }
   }
