@@ -1,17 +1,29 @@
 {
   "manifest_version": "0.3",
   "name": "@nimblebraininc/abstract",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Abstract API server with email validation, phone validation, IP geolocation, and more",
   "author": {
     "name": "NimbleBrain Inc"
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "Abstract API Key",
+      "description": "Your Abstract API key from https://www.abstractapi.com/",
+      "sensitive": true,
+      "required": true
+    }
   },
   "server": {
     "type": "python",
     "entry_point": "mcp_abstract_api.server",
     "mcp_config": {
       "command": "python",
-      "args": ["-m", "mcp_abstract_api.server"]
+      "args": ["-m", "mcp_abstract_api.server"],
+      "env": {
+        "ABSTRACT_API_KEY": "${user_config.api_key}"
+      }
     }
   }
 }
