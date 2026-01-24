@@ -27,7 +27,7 @@ mpak config set @nimblebraininc/abstract email_api_key=xxx ip_api_key=yyy
 ## Testing
 
 ```bash
-mpak run @nimblebraininc/abstract --update
+mpak bundle run @nimblebraininc/abstract --update
 ```
 
 ## Debugging 401 Errors
