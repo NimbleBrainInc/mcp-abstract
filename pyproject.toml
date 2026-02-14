@@ -1,6 +1,6 @@
 [project]
 name = "mcp-abstract-api"
-version = "0.1.3"
+version = "0.2.0"
 description = "MCP Server for Abstract API with comprehensive tooling and type safety"
 readme = "README.md"
 requires-python = ">=3.13"
