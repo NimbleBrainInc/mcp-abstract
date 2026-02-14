@@ -1,10 +1,15 @@
 {
-  "manifest_version": "0.3",
+  "manifest_version": "0.4",
   "name": "@nimblebraininc/abstract",
   "version": "0.1.3",
   "description": "Abstract API server with email validation, phone validation, IP geolocation, and more",
   "author": {
-    "name": "NimbleBrain Inc"
+    "name": "NimbleBrain Inc",
+    "email": "hello@nimblebrain.ai"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NimbleBrainInc/mcp-abstract"
   },
   "user_config": {
     "email_api_key": {
@@ -95,6 +100,34 @@
         "ABSTRACT_COMPANY_API_KEY": "${user_config.company_api_key}",
         "ABSTRACT_SCRAPE_API_KEY": "${user_config.scrape_api_key}",
         "ABSTRACT_SCREENSHOT_API_KEY": "${user_config.screenshot_api_key}"
+      }
+    }
+  },
+  "tools": [
+    { "name": "validate_email", "description": "Validate email address and check deliverability" },
+    { "name": "validate_phone", "description": "Validate phone number and get carrier info" },
+    { "name": "validate_vat", "description": "Validate EU VAT numbers" },
+    { "name": "geolocate_ip", "description": "Get location data from IP address" },
+    { "name": "get_ip_info", "description": "Get detailed IP information (ISP, ASN, connection details)" },
+    { "name": "geolocate_ip_security", "description": "Get IP geolocation with security/threat analysis" },
+    { "name": "get_timezone", "description": "Get timezone from location or coordinates" },
+    { "name": "convert_timezone", "description": "Convert time between timezones" },
+    { "name": "get_holidays", "description": "Get public holidays for a country and year" },
+    { "name": "get_exchange_rates", "description": "Get current currency exchange rates" },
+    { "name": "convert_currency", "description": "Convert amount between currencies" },
+    { "name": "get_company_info", "description": "Get company data from domain name" },
+    { "name": "scrape_url", "description": "Extract structured data from web pages" },
+    { "name": "generate_screenshot", "description": "Generate website screenshot" }
+  ],
+  "_meta": {
+    "org.mpaktrust": {
+      "mtf_version": "0.1",
+      "permissions": {
+        "filesystem": "read",
+        "network": "full",
+        "environment": "read",
+        "subprocess": "none",
+        "native": "none"
       }
     }
   }
