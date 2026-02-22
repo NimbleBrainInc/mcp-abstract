@@ -40,6 +40,8 @@ Thumbs.db
 
 # MCP/Claude
 .claude/
+deps/
+*.mcpb
 
 # Package managers
 uv.lock
