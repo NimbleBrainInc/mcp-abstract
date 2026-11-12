@@ -3,6 +3,7 @@
   "name": "@nimblebraininc/abstract",
   "display_name": "Abstract",
   "version": "0.2.3",
+  "license": "MIT",
   "description": "Abstract API server with email validation, phone validation, IP geolocation, and more",
   "author": {
     "name": "NimbleBrain Inc",
