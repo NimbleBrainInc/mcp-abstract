@@ -1,10 +1,13 @@
 """FastMCP server for Abstract API with comprehensive tooling."""
 
+import logging
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastmcp import Context, FastMCP
+from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -29,6 +32,16 @@ from .api_models import (
 _env_path = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(dotenv_path=_env_path)
 
+# Logging setup - all logs to stderr (stdout is reserved for JSON-RPC). Diagnostics go
+# here, never to the client: MCP's logging capability is deprecated as of the 2026-07-28
+# protocol (SEP-2577). A failure the caller must see is raised as a ToolError.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    stream=sys.stderr,
+)
+logger = logging.getLogger("mcp_abstract_api")
+
 # Create MCP server
 mcp = FastMCP("AbstractAPI")
 
@@ -49,25 +62,27 @@ def _get_api_key_for_service(service: str) -> str | None:
     return os.environ.get(f"ABSTRACT_{service.upper()}_API_KEY")
 
 
-async def get_client(ctx: Context | None, service: str = "general") -> AbstractClient:
+async def get_client(service: str = "general") -> AbstractClient:
     """Get or create the API client instance for a specific service.
 
     Args:
-        ctx: MCP context
         service: Service name (e.g., "email", "phone", "ip")
 
     Returns:
         AbstractClient instance configured for the service
+
+    Raises:
+        ToolError: when neither the service's key nor ABSTRACT_API_KEY is set, so the
+            caller sees why the tool failed.
     """
     global _clients
 
     if service not in _clients:
         api_key = _get_api_key_for_service(service)
-        if not api_key and ctx:
-            await ctx.warning(
-                f"No API key configured for {service} service. "
-                f"Set ABSTRACT_{service.upper()}_API_KEY or ABSTRACT_API_KEY in your .env file"
-            )
+        if not api_key and not os.environ.get("ABSTRACT_API_KEY"):
+            key_var = f"ABSTRACT_{service.upper()}_API_KEY"
+            logger.error("No API key for the %s service (%s)", service, key_var)
+            raise ToolError(f"Set {key_var} or ABSTRACT_API_KEY to use the {service} service")
         _clients[service] = AbstractClient(api_key=api_key)
 
     return _clients[service]
@@ -89,7 +104,7 @@ async def health_check(request: Request) -> JSONResponse:
 
 # Email Validation Tools
 @mcp.tool()
-async def validate_email(email: str, ctx: Context | None = None) -> EmailValidationResponse:
+async def validate_email(email: str) -> EmailValidationResponse:
     """Validate email address and check deliverability.
 
     Checks email format, domain validity, MX records, SMTP validation,
@@ -97,25 +112,21 @@ async def validate_email(email: str, ctx: Context | None = None) -> EmailValidat
 
     Args:
         email: Email address to validate
-        ctx: MCP context
 
     Returns:
         Complete email validation results including deliverability score
     """
-    client = await get_client(ctx, service="email")
+    client = await get_client(service="email")
     try:
         return await client.validate_email(email)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Email validation error: {e.message}")
-        raise
+        logger.warning("validate_email failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # Phone Validation Tools
 @mcp.tool()
-async def validate_phone(
-    phone: str, ctx: Context | None = None, country_code: str | None = None
-) -> PhoneValidationResponse:
+async def validate_phone(phone: str, country_code: str | None = None) -> PhoneValidationResponse:
     """Validate phone number and get carrier info.
 
     Validates phone format, identifies carrier, determines phone type
@@ -124,48 +135,42 @@ async def validate_phone(
     Args:
         phone: Phone number to validate
         country_code: ISO 3166-1 alpha-2 country code (optional)
-        ctx: MCP context
 
     Returns:
         Phone validation results with carrier and location info
     """
-    client = await get_client(ctx, service="phone")
+    client = await get_client(service="phone")
     try:
         return await client.validate_phone(phone, country_code)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Phone validation error: {e.message}")
-        raise
+        logger.warning("validate_phone failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # VAT Validation Tools
 @mcp.tool()
-async def validate_vat(vat_number: str, ctx: Context | None = None) -> VATValidationResponse:
+async def validate_vat(vat_number: str) -> VATValidationResponse:
     """Validate EU VAT numbers.
 
     Checks VAT number validity and returns associated company information.
 
     Args:
         vat_number: VAT number to validate (e.g., "SE556656688001")
-        ctx: MCP context
 
     Returns:
         VAT validation results with company details
     """
-    client = await get_client(ctx, service="vat")
+    client = await get_client(service="vat")
     try:
         return await client.validate_vat(vat_number)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"VAT validation error: {e.message}")
-        raise
+        logger.warning("validate_vat failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # IP Geolocation Tools
 @mcp.tool()
-async def geolocate_ip(
-    ip_address: str, ctx: Context | None = None, fields: str | None = None
-) -> IPGeolocationResponse:
+async def geolocate_ip(ip_address: str, fields: str | None = None) -> IPGeolocationResponse:
     """Get location data from IP address.
 
     Returns comprehensive geolocation data including city, region, country,
@@ -174,22 +179,20 @@ async def geolocate_ip(
     Args:
         ip_address: IP address to geolocate
         fields: Comma-separated fields to return (e.g., "city,country,timezone")
-        ctx: MCP context
 
     Returns:
         Complete IP geolocation information
     """
-    client = await get_client(ctx, service="ip")
+    client = await get_client(service="ip")
     try:
         return await client.geolocate_ip(ip_address, fields)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"IP geolocation error: {e.message}")
-        raise
+        logger.warning("geolocate_ip failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 @mcp.tool()
-async def get_ip_info(ip_address: str, ctx: Context | None = None) -> IPGeolocationResponse:
+async def get_ip_info(ip_address: str) -> IPGeolocationResponse:
     """Get detailed IP information (ISP, ASN, connection details).
 
     Provides complete IP information including ISP, autonomous system number,
@@ -197,24 +200,20 @@ async def get_ip_info(ip_address: str, ctx: Context | None = None) -> IPGeolocat
 
     Args:
         ip_address: IP address to query
-        ctx: MCP context
 
     Returns:
         Detailed IP information
     """
-    client = await get_client(ctx, service="ip")
+    client = await get_client(service="ip")
     try:
         return await client.get_ip_info(ip_address)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"IP info error: {e.message}")
-        raise
+        logger.warning("get_ip_info failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 @mcp.tool()
-async def geolocate_ip_security(
-    ip_address: str, ctx: Context | None = None
-) -> IPGeolocationResponse:
+async def geolocate_ip_security(ip_address: str) -> IPGeolocationResponse:
     """Get IP geolocation with security/threat analysis.
 
     Analyzes IP address to determine if it's from a VPN, proxy server,
@@ -223,24 +222,21 @@ async def geolocate_ip_security(
 
     Args:
         ip_address: IP address to analyze
-        ctx: MCP context
 
     Returns:
         IP geolocation with security/threat information
     """
-    client = await get_client(ctx, service="ip")
+    client = await get_client(service="ip")
     try:
         return await client.geolocate_ip_security(ip_address)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"IP geolocation security error: {e.message}")
-        raise
+        logger.warning("geolocate_ip_security failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # Timezone Tools
 @mcp.tool()
 async def get_timezone(
-    ctx: Context | None = None,
     location: str | None = None,
     latitude: float | None = None,
     longitude: float | None = None,
@@ -254,18 +250,16 @@ async def get_timezone(
         location: Location name (e.g., "New York")
         latitude: Latitude coordinate
         longitude: Longitude coordinate
-        ctx: MCP context
 
     Returns:
         Timezone and current time information
     """
-    client = await get_client(ctx, service="timezone")
+    client = await get_client(service="timezone")
     try:
         return await client.get_timezone(location, latitude, longitude)
     except (AbstractAPIError, ValueError) as e:
-        if ctx:
-            await ctx.error(f"Timezone error: {str(e)}")
-        raise
+        logger.warning("get_timezone failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 @mcp.tool()
@@ -273,7 +267,6 @@ async def convert_timezone(
     base_location: str,
     base_datetime: str,
     target_location: str,
-    ctx: Context | None = None,
 ) -> TimezoneConversionResponse:
     """Convert time between timezones.
 
@@ -284,18 +277,16 @@ async def convert_timezone(
         base_location: Source location/timezone
         base_datetime: Datetime in ISO 8601 format
         target_location: Target location/timezone
-        ctx: MCP context
 
     Returns:
         Timezone conversion results with converted datetime
     """
-    client = await get_client(ctx, service="timezone")
+    client = await get_client(service="timezone")
     try:
         return await client.convert_timezone(base_location, base_datetime, target_location)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Timezone conversion error: {e.message}")
-        raise
+        logger.warning("convert_timezone failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # Holidays Tools
@@ -303,7 +294,6 @@ async def convert_timezone(
 async def get_holidays(
     country: str,
     year: int,
-    ctx: Context | None = None,
     month: int | None = None,
     day: int | None = None,
 ) -> HolidaysResponse:
@@ -317,25 +307,21 @@ async def get_holidays(
         year: Year (e.g., 2025)
         month: Month (1-12, optional)
         day: Day (1-31, optional)
-        ctx: MCP context
 
     Returns:
         List of holidays matching the criteria
     """
-    client = await get_client(ctx, service="holidays")
+    client = await get_client(service="holidays")
     try:
         return await client.get_holidays(country, year, month, day)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Holidays error: {e.message}")
-        raise
+        logger.warning("get_holidays failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # Exchange Rates Tools
 @mcp.tool()
-async def get_exchange_rates(
-    ctx: Context | None = None, base: str = "USD", target: str | None = None
-) -> ExchangeRatesResponse:
+async def get_exchange_rates(base: str = "USD", target: str | None = None) -> ExchangeRatesResponse:
     """Get current currency exchange rates.
 
     Returns live exchange rates for a base currency. If target is specified,
@@ -344,18 +330,16 @@ async def get_exchange_rates(
     Args:
         base: Base currency code (e.g., "USD")
         target: Target currency code (optional, returns all if not specified)
-        ctx: MCP context
 
     Returns:
         Current exchange rates
     """
-    client = await get_client(ctx, service="exchange")
+    client = await get_client(service="exchange")
     try:
         return await client.get_exchange_rates(base, target)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Exchange rates error: {e.message}")
-        raise
+        logger.warning("get_exchange_rates failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 @mcp.tool()
@@ -363,7 +347,6 @@ async def convert_currency(
     base: str,
     target: str,
     amount: float,
-    ctx: Context | None = None,
     date: str | None = None,
 ) -> CurrencyConversionResponse:
     """Convert amount between currencies.
@@ -376,23 +359,21 @@ async def convert_currency(
         target: Target currency code (e.g., "EUR")
         amount: Amount to convert
         date: Historical date in YYYY-MM-DD format (optional)
-        ctx: MCP context
 
     Returns:
         Currency conversion results with converted amount
     """
-    client = await get_client(ctx, service="exchange")
+    client = await get_client(service="exchange")
     try:
         return await client.convert_currency(base, target, amount, date)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Currency conversion error: {e.message}")
-        raise
+        logger.warning("convert_currency failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # Company Enrichment Tools
 @mcp.tool()
-async def get_company_info(domain: str, ctx: Context | None = None) -> CompanyInfoResponse:
+async def get_company_info(domain: str) -> CompanyInfoResponse:
     """Get company data from domain name.
 
     Returns comprehensive company information including name, industry,
@@ -400,25 +381,21 @@ async def get_company_info(domain: str, ctx: Context | None = None) -> CompanyIn
 
     Args:
         domain: Company domain (e.g., "google.com")
-        ctx: MCP context
 
     Returns:
         Complete company information
     """
-    client = await get_client(ctx, service="company")
+    client = await get_client(service="company")
     try:
         return await client.get_company_info(domain)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Company info error: {e.message}")
-        raise
+        logger.warning("get_company_info failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # Web Scraping Tools
 @mcp.tool()
-async def scrape_url(
-    url: str, ctx: Context | None = None, render_js: bool = False
-) -> ScrapeResponse:
+async def scrape_url(url: str, render_js: bool = False) -> ScrapeResponse:
     """Extract structured data from web pages.
 
     Scrapes web pages and extracts content, links, images, and metadata.
@@ -427,25 +404,22 @@ async def scrape_url(
     Args:
         url: URL to scrape
         render_js: Render JavaScript (default: false)
-        ctx: MCP context
 
     Returns:
         Scraped content and extracted data
     """
-    client = await get_client(ctx, service="scrape")
+    client = await get_client(service="scrape")
     try:
         return await client.scrape_url(url, render_js)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Scraping error: {e.message}")
-        raise
+        logger.warning("scrape_url failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # Screenshot Tools
 @mcp.tool()
 async def generate_screenshot(
     url: str,
-    ctx: Context | None = None,
     width: int = 1920,
     height: int = 1080,
     full_page: bool = False,
@@ -460,18 +434,16 @@ async def generate_screenshot(
         width: Screenshot width in pixels (default: 1920)
         height: Screenshot height in pixels (default: 1080)
         full_page: Capture full page (default: false)
-        ctx: MCP context
 
     Returns:
         Screenshot information with image data
     """
-    client = await get_client(ctx, service="screenshot")
+    client = await get_client(service="screenshot")
     try:
         return await client.generate_screenshot(url, width, height, full_page)
     except AbstractAPIError as e:
-        if ctx:
-            await ctx.error(f"Screenshot error: {e.message}")
-        raise
+        logger.warning("generate_screenshot failed: %s", e)
+        raise ToolError(str(e)) from e
 
 
 # Create ASGI application for deployment

@@ -332,7 +332,7 @@ This project follows the **S-Tier MCP Server Architecture**:
 - **Separation of Concerns**: API client, models, and server are separate
 - **Type Safety First**: Strong typing with Pydantic and mypy strict mode
 - **Async All the Way**: Async/await for all I/O operations
-- **Error Handling**: Custom exceptions, context logging, graceful failures
+- **Error Handling**: Custom exceptions, tool errors the caller sees, stderr diagnostics
 - **Testability**: Mock-friendly design with dependency injection
 - **Production Ready**: Docker, health checks, monitoring support
 
@@ -383,7 +383,7 @@ All API errors are wrapped in `AbstractAPIError` with:
 - Error message
 - Optional error details
 
-Errors are logged via the MCP context for debugging.
+A failed tool call reaches the caller as a tool error carrying that message (FastMCP's `ToolError`); diagnostics go to stderr. The server sends no MCP log messages to the client: that capability is deprecated as of the 2026-07-28 protocol (SEP-2577).
 
 ## Contributing
 
