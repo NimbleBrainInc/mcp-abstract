@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastmcp import Client
+from fastmcp.exceptions import ToolError
 
+from mcp_abstract_api.api_client import AbstractAPIError
 from mcp_abstract_api.api_models import (
     CompanyInfoResponse,
     EmailValidationResponse,
@@ -159,3 +161,40 @@ class TestHealthEndpoint:
 
         assert response.status_code == 200
         assert "healthy" in response.body.decode()
+
+
+class TestToolErrors:
+    """Failures reach the caller as tool errors, never as client log messages."""
+
+    @pytest.mark.asyncio
+    async def test_api_error_is_a_tool_error(self, mcp_server) -> None:
+        """An API error reaches the caller as a ToolError carrying its message."""
+        with patch("mcp_abstract_api.server.get_client", new_callable=AsyncMock) as mock_get_client:
+            mock_client = AsyncMock()
+            mock_get_client.return_value = mock_client
+            mock_client.validate_email.side_effect = AbstractAPIError(401, "Invalid API key")
+            async with Client(mcp_server) as client:
+                with pytest.raises(ToolError, match="Invalid API key"):
+                    await client.call_tool("validate_email", {"email": "a@example.com"})
+
+    @pytest.mark.asyncio
+    async def test_missing_key_is_a_tool_error(self, monkeypatch) -> None:
+        """With neither the service key nor ABSTRACT_API_KEY set, the error names both."""
+        from mcp_abstract_api import server
+
+        monkeypatch.setattr(server, "_clients", {})
+        monkeypatch.delenv("ABSTRACT_EMAIL_API_KEY", raising=False)
+        monkeypatch.delenv("ABSTRACT_API_KEY", raising=False)
+        with pytest.raises(ToolError, match="ABSTRACT_EMAIL_API_KEY or ABSTRACT_API_KEY"):
+            await server.get_client(service="email")
+
+    @pytest.mark.asyncio
+    async def test_general_key_is_a_fallback(self, monkeypatch) -> None:
+        """ABSTRACT_API_KEY alone is enough; the client falls back to it."""
+        from mcp_abstract_api import server
+
+        monkeypatch.setattr(server, "_clients", {})
+        monkeypatch.delenv("ABSTRACT_EMAIL_API_KEY", raising=False)
+        monkeypatch.setenv("ABSTRACT_API_KEY", "general-key")
+        client = await server.get_client(service="email")
+        assert client.api_key == "general-key"

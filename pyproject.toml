@@ -1,13 +1,13 @@
 [project]
 name = "mcp-abstract-api"
-version = "0.2.2"
+version = "0.3.0"
 description = "MCP Server for Abstract API with comprehensive tooling and type safety"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.13"
 dependencies = [
     "aiohttp>=3.12.15",
-    "fastmcp>=2.14.0",
+    "fastmcp>=4.0.0",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
 ]
